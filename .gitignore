@@ -1,0 +1,10 @@
+.direnv/
+__pycache__/
+*.pyc
+
+# Ignore file uploads
+file_upload/
+*.docx
+
+# env
+.envrc.local
