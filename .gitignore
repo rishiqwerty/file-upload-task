@@ -5,6 +5,9 @@ __pycache__/
 # Ignore file uploads
 file_upload/
 *.docx
+*.pdf
+*.zip
 
 # env
 .envrc.local
+.env

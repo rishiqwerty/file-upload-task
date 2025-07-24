@@ -1,0 +1,53 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: api.DockerFile
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+      - redis
+    env_file: .env
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: worker.Dockerfile
+    volumes:
+      - .:/app
+    depends_on:
+      - web
+      - redis
+      - libreoffice
+    env_file: .env
+
+  redis:
+    image: redis:7
+  db:
+    image: postgres:17
+    container_name: fileupload_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: docxconvert
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
+    
+  libreoffice:
+    image: lscr.io/linuxserver/libreoffice
+    volumes:
+      - ./file_upload:/app/file_upload
+    entrypoint: sleep infinity
+
+volumes:
+  postgres_data:
+
+networks:
+  backend:
