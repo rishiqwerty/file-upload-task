@@ -19,14 +19,26 @@ This service allows users to upload multiple .docx files, which are then convert
 ```
 .
 ├── app/
+|   ├── api/
+│   │   └── v1/                  # Routes
+│   │       └── jobs.py          # Routes for jobs
+│   │       └── schemas.py
+|   ├── database/
+│   │   └── base.py
+│   │   └── models.py
+│   │   └── session.py
+|   ├── services/                # utils for file conversion and zipping used by celery
+│   │   └── file_conversion_and_zippping.py
+│   │   └── file_upload.py
+│   │   └── generate_s3_url.py
+│   ├── celery.py                 # Celery app
+│   ├── config.py                 # Config for env
 │   ├── main.py                  # FastAPI app
-│   ├── tasks.py                 # Celery tasks
-│   ├── models.py                # SQLAlchemy models
-│   ├── utils/
-│   │   └── conversion.py        # DOCX to PDF logic
-├── celery_worker/
-│   └── worker.py                # Entry point for Celery
-├── Dockerfile
+│   ├── tasks.py
+├── database_migrations/         # Track for migrations
+├── tests/
+├── api.Dockerfile
+├── worker.Dockerfile
 ├── docker-compose.yml
 ├── requirements.txt
 └── README.md
@@ -37,6 +49,7 @@ Create a .env or .envrc.local file in the root directory:
 ```
 # FastAPI
 UPLOAD_DIR=./file_upload/data/uploads
+BASE_URL=http://localhost:8000
 
 # Database
 DATABASE_URL=postgresql://postgres:password@db:5432/conversion_db
@@ -46,6 +59,7 @@ REDIS_URL=redis://redis:6379/0
 
 # AWS
 S3_BUCKET=<BUCKET_NAME>
+USE_S3=true # For using s3 for file upload
 ```
 
 ### 🐳 Running Locally
@@ -57,7 +71,7 @@ cp .env.example .env
 ```
 2. Start Services
 ```
-docker-compose up --build
+docker-compose up -d
 ```
 
 FastAPI: http://localhost:8088/docs
