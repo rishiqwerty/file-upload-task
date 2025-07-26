@@ -1,9 +1,8 @@
 FROM python:3.12-slim
 
 WORKDIR /app
-COPY pyproject.toml .
-COPY poetry.lock .
-RUN pip install poetry && poetry install --no-dev
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 RUN mkdir -p file_upload/data/uploads
 

@@ -2,7 +2,7 @@ from typing import List
 import zipfile
 import subprocess
 from pathlib import Path
-import os
+from app.config import USE_S3
 
 
 def convert_docx_to_pdf(docx_path: str):
@@ -12,22 +12,37 @@ def convert_docx_to_pdf(docx_path: str):
     """
     output_dir = Path(docx_path).parent
     print(f"Converting {output_dir} to PDF in {docx_path}")
-    result = subprocess.run(
-        [
-            "docker",
-            "exec",
-            "file-upload-task-libreoffice-1",  # container name from compose
-            "libreoffice",
-            "--headless",
-            "--convert-to",
-            "pdf",
-            "--outdir",
-            f"/app/{output_dir}",
-            f"/app/{docx_path}",
-        ],
-        capture_output=True,
-        text=True,
-    )
+    if USE_S3:
+        result = subprocess.run(
+            [
+                "libreoffice",
+                "--headless",
+                "--convert-to",
+                "pdf",
+                "--outdir",
+                f"{output_dir}",
+                f"{docx_path}",
+            ],
+            capture_output=True,
+            text=True,
+        )
+    else:
+        result = subprocess.run(
+            [
+                "docker",
+                "exec",
+                "file-upload-task-libreoffice-1",  # container name from compose
+                "libreoffice",
+                "--headless",
+                "--convert-to",
+                "pdf",
+                "--outdir",
+                f"/app/{output_dir}",
+                f"/app/{docx_path}",
+            ],
+            capture_output=True,
+            text=True,
+        )
 
     if result.returncode == 0:
         pdf_path = docx_path.replace(".docx", ".pdf")

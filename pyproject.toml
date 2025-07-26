@@ -14,6 +14,7 @@ python-multipart = "^0.0.20"
 celery = {extras = ["redis"], version = "^5.5.3"}
 alembic = "^1.16.4"
 psycopg2-binary = "^2.9.10"
+boto3 = "^1.39.13"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.4.1"
