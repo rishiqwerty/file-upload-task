@@ -31,6 +31,18 @@ services:
     env_file: .env
     networks:
       - backend
+  celery_worker_zip:
+    build:
+      context: .
+      dockerfile: worker.DockerFile
+    command: celery -A app.celery.celery_app worker -Q zip_queue -c 2 -l info
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+    env_file: .env
+    networks:
+      - backend
 
   redis:
     image: redis:7

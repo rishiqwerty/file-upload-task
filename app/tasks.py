@@ -66,8 +66,7 @@ def process_file_conversion(file_id: uuid.UUID, file_path: str):
             for f in job.file_conversions
         )
         if all_done:
-            zip_converted_files.delay(str(job.id))
-
+            zip_converted_files.apply_async(args=[job.id], queue="zip_queue")
     except Exception as e:
         session.rollback()
         print(f"Error in process_file_conversion: {e}")

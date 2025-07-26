@@ -25,4 +25,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 RUN mkdir -p file_upload/data/uploads
 
-CMD ["celery", "-A", "app.celery.celery_app", "worker", "-l", "info"]
+CMD ["celery", "-A", "app.celery.celery_app", "worker", "-Q", "libre_queue", "-c", "1", "-l", "info"]
+

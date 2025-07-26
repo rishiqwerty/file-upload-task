@@ -1,3 +1,4 @@
+import time
 from typing import List
 import zipfile
 import subprocess
@@ -29,10 +30,13 @@ def convert_docx_to_pdf(docx_path: str):
 
     if result.returncode == 0:
         pdf_path = docx_path.replace(".docx", ".pdf")
+        time.sleep(0.1)
+
         return {
             "status": "success",
             "converted_file": f"{output_dir}/{Path(pdf_path).name}",
         }
+    time.sleep(0.1)
     return {"status": "error", "error_message": result.stderr}
 
 

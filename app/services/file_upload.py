@@ -61,7 +61,10 @@ async def handle_file_upload(
             db.commit()
             db.refresh(file_conversion)
 
-            process_file_conversion.delay(file_conversion.id, storage_path)
+            process_file_conversion.apply_async(
+                args=[file_conversion.id, storage_path], queue="libre_queue"
+            )
+
             count += 1
         return job_id, count
     except Exception as e:
