@@ -1,5 +1,11 @@
 # Route for handling file uploads
-from fastapi import APIRouter, Depends, UploadFile, File, Response
+import os
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
+from fastapi.responses import StreamingResponse, FileResponse
+import boto3
+from botocore.exceptions import ClientError
+
+
 from sqlalchemy.orm import Session
 from typing import List
 import uuid
@@ -11,6 +17,7 @@ from app.api.v1.schemas import (
     JobStatusResponse,
     FileConversionStatusResponse,
 )
+from app.config import S3_BUCKET_NAME
 
 upload_router = APIRouter()
 
@@ -77,11 +84,40 @@ async def get_conversion_job_status(job_id: uuid.UUID, db: Session = Depends(get
         )
 
 
-@upload_router.get("/{job_id}/download", response_class=Response, status_code=200)
+@upload_router.get("/{job_id}/download", status_code=200)
 async def download_converted_files(job_id: uuid.UUID):
     """
-    Download the converted files for a specific job.
-    This endpoint returns the files associated with the job in a downloadable format.
+    Stream the converted ZIP file for a specific job from S3.
     """
-    # TODO: Implement logic to retrieve and return the converted files
-    return Response(content=b"Converted file content", media_type="application/zip")
+    if not S3_BUCKET_NAME:
+        file_path = (
+            f"/app/output/{job_id}/{job_id}.zip"  # Adjust path as per your project
+        )
+
+        if not os.path.exists(file_path):
+            raise HTTPException(status_code=404, detail="File not found")
+
+        return FileResponse(
+            path=file_path, filename=f"{job_id}.zip", media_type="application/zip"
+        )
+
+    key = f"{job_id}/{job_id}.zip"
+    s3 = boto3.client("s3")
+
+    try:
+        s3_response = s3.get_object(Bucket=S3_BUCKET_NAME, Key=key)
+        file_stream = s3_response["Body"]
+
+        return StreamingResponse(
+            file_stream,
+            media_type="application/zip",
+            headers={"Content-Disposition": f'attachment; filename="{job_id}.zip"'},
+        )
+
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "NoSuchKey":
+            raise HTTPException(status_code=404, detail="ZIP file not found in S3")
+        else:
+            raise HTTPException(
+                status_code=500, detail=f"S3 Error: {e.response['Error']['Message']}"
+            )

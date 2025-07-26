@@ -7,7 +7,7 @@ from celery import shared_task
 from pathlib import Path
 import os
 from app.celery import celery_app
-from app.config import USE_S3, S3_BUCKET_NAME, USE_PRESIGNED_URL
+from app.config import USE_S3, S3_BUCKET_NAME, BASE_URL
 import boto3
 import tempfile
 
@@ -128,19 +128,8 @@ def zip_converted_files(job_id: uuid.UUID):
             zip_name = f"{Path(converted_files[0]).parent}/{job_id}.zip"
             zip_path = file_zip(converted_files, zip_name)
 
-            if USE_S3:
-                if USE_PRESIGNED_URL:
-                    url = generate_presigned_url(
-                        S3_BUCKET_NAME, f"{job_id}/{job_id}.zip", expiration=604800
-                    )
-                else:
-                    url = f"https://{S3_BUCKET_NAME}.s3.amazonaws.com/{job_id}/{job_id}.zip"
-                job.download_url = url
-            else:
-                BASE_STATIC_URL = os.getenv(
-                    "STATIC_BASE_URL", "http://localhost:8088/static"
-                )
-                job.download_url = f"{BASE_STATIC_URL}/{job_id}/{job_id}.zip"
+            url = f"http://{BASE_URL}/api/v1/jobs/{job_id}/download"
+            job.download_url = url
 
         job.status = JobStatusEnum.completed
         session.commit()
