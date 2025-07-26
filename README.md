@@ -107,3 +107,7 @@ http://localhost:8088/static/{job_id}/{job_id}.zip
 - Add retry mechanism in Celery tasks
 - Add file size/type validation
 - Add expiration or cleanup for old jobs
+
+### Architecture diagram
+
+<img width="641" height="406" alt="Task" src="https://github.com/user-attachments/assets/00a31b4b-db10-463a-9c19-1814bd182ee3" />
