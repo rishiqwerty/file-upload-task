@@ -3,14 +3,20 @@ services:
     build:
       context: .
       dockerfile: api.DockerFile
+    command: >
+      bash -c "sleep 10 && alembic upgrade head &&
+               uvicorn app.main:app --host 0.0.0.0 --port 8088"
+
     ports:
-      - "8000:8000"
+      - "8088:8088"
     volumes:
       - .:/app
     depends_on:
       - db
       - redis
     env_file: .env
+    networks:
+      - backend
 
   celery_worker:
     build:
@@ -23,9 +29,13 @@ services:
       - redis
       - libreoffice
     env_file: .env
+    networks:
+      - backend
 
   redis:
     image: redis:7
+    networks:
+      - backend
   db:
     image: postgres:17
     container_name: fileupload_postgres
@@ -45,6 +55,8 @@ services:
     volumes:
       - ./file_upload:/app/file_upload
     entrypoint: sleep infinity
+    networks:
+      - backend
 
 volumes:
   postgres_data:

@@ -119,16 +119,13 @@ def zip_converted_files(job_id: uuid.UUID):
                     s3.upload_fileobj(f, S3_BUCKET_NAME, zip_s3_key)
 
                 # Set URL
-                BASE_STATIC_URL = os.getenv(
-                    "STATIC_BASE_URL", f"https://{S3_BUCKET_NAME}.s3.amazonaws.com"
-                )
-                job.download_url = f"{BASE_STATIC_URL}/{zip_s3_key}"
+                job.download_url = f"{BASE_URL}/{zip_s3_key}"
         else:
             # Local mode
             zip_name = f"{Path(converted_files[0]).parent}/{job_id}.zip"
             zip_path = file_zip(converted_files, zip_name)
 
-            url = f"http://{BASE_URL}/api/v1/jobs/{job_id}/download"
+            url = f"{BASE_URL}/api/v1/jobs/{job_id}/download"
             job.download_url = url
 
         job.status = JobStatusEnum.completed

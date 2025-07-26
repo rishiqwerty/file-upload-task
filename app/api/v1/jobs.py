@@ -17,7 +17,7 @@ from app.api.v1.schemas import (
     JobStatusResponse,
     FileConversionStatusResponse,
 )
-from app.config import S3_BUCKET_NAME
+from app.config import S3_BUCKET_NAME, USE_S3, UPLOAD_DIR
 
 upload_router = APIRouter()
 
@@ -89,10 +89,8 @@ async def download_converted_files(job_id: uuid.UUID):
     """
     Stream the converted ZIP file for a specific job from S3.
     """
-    if not S3_BUCKET_NAME:
-        file_path = (
-            f"/app/output/{job_id}/{job_id}.zip"  # Adjust path as per your project
-        )
+    if not USE_S3:
+        file_path = f"/app/{UPLOAD_DIR}/{job_id}/{job_id}.zip"  # Adjust path as per your project
 
         if not os.path.exists(file_path):
             raise HTTPException(status_code=404, detail="File not found")
