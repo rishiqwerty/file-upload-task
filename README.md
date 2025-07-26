@@ -64,10 +64,10 @@ FastAPI: http://localhost:8088/docs
 Redis, Postgres, Celery workers all run via Docker Compose.
 
 ### 📥 API Endpoints
-- Upload Files
-**POST /api/v1/jobs/**
-**Content-Type:** multipart/form-data
-**Form Field:** files (multiple .docx files)
+- Upload Files:  
+**POST /api/v1/jobs/**  
+**Content-Type:** multipart/form-data  
+**Form Field:** files (multiple .docx files)  
 
 **Response:**
 ```
@@ -76,9 +76,9 @@ Redis, Postgres, Celery workers all run via Docker Compose.
   "count": 10
 }
 ```
-- Check Job Status
-**GET /status/{job_id}**
-**Response:**
+- Check Job Status:  
+**GET /status/{job_id}**  
+**Response:**  
 ```
 {
   "status": "completed",
@@ -90,7 +90,7 @@ Redis, Postgres, Celery workers all run via Docker Compose.
 # If hosted on cloud
 https://<bucket_name>.s3.amazonaws.com/{job_id}/{job_id}.zip
 # Locally
-http://localhost:8088/static/{job_id}/{job_id}.zip
+http://localhost:8088/api/v1/{job_id}/download/{job_id}.zip
 ```
 
 ### ☁️ Deploying to AWS
