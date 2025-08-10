@@ -155,6 +155,8 @@ def unzip_and_schedule_file_conversion(zip_path: str, job_id: uuid.UUID):
     for file in files:
         # unzip
         print(f"Added for conversion: {file}")
+        if "/.~" in file:
+            continue
         file_conversion = FileConversion(
             file_name=file,
             job=job,
