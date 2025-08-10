@@ -5,7 +5,7 @@ from typing import List, Optional
 
 class JobResponse(BaseModel):
     job_id: uuid.UUID
-    file_count: int
+    file_count: Optional[int] = None
 
 
 class FileConversionStatusResponse(BaseModel):

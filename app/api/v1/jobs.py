@@ -24,15 +24,15 @@ upload_router = APIRouter()
 
 @upload_router.post("/", response_model=JobResponse, status_code=202)
 async def create_conversion_job(
-    files: List[UploadFile] = File(...), db: Session = Depends(get_db)
+    file: UploadFile = File(...), db: Session = Depends(get_db)
 ):
     """
     Create a new file conversion job.
-    This endpoint accepts multiple files and returns a job ID
-    along with the count of files uploaded.
+    This endpoint accepts zip file containing docx files and
+    returns a job ID.
     """
-    job_id, file_count = await handle_file_upload(files, db)
-    return JobResponse(job_id=job_id, file_count=file_count)
+    job_id = await handle_file_upload(file, db)
+    return JobResponse(job_id=job_id)
 
 
 @upload_router.get(

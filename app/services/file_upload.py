@@ -4,7 +4,7 @@ from typing import List
 from fastapi import UploadFile
 from sqlalchemy.orm import Session
 from app.database.models import FileConversion, Job
-from app.tasks import process_file_conversion
+from app.tasks import unzip_and_schedule_file_conversion
 import boto3
 import io
 from app.config import UPLOAD_DIR, USE_S3, S3_BUCKET_NAME
@@ -24,18 +24,18 @@ async def save_file(job_id: uuid.UUID, file: UploadFile) -> str:
         s3.upload_fileobj(io.BytesIO(contents), S3_BUCKET_NAME, s3_key)
         return s3_key
     else:
+        print(f"Saving file locally: {filename}")
         job_dir = os.path.join(UPLOAD_DIR, str(job_id))
         os.makedirs(job_dir, exist_ok=True)
         file_path = os.path.join(job_dir, filename)
-        contents = await file.read()
         with open(file_path, "wb") as f:
-            f.write(contents)
+            while chunk := await file.read(1024 * 1024):  # chunks
+                f.write(chunk)
+        await file.close()
         return file_path
 
 
-async def handle_file_upload(
-    files: List[UploadFile], db: Session
-) -> tuple[uuid.UUID, int]:
+async def handle_file_upload(file: UploadFile, db: Session) -> tuple[uuid.UUID, int]:
     """
     File upload handler that saves files and creates a job entry.
     This function is called by the API endpoint to handle file uploads.
@@ -48,25 +48,12 @@ async def handle_file_upload(
         db.refresh(job)
 
         job_id = job.id
-        count = 0
-        for file in files:
-            storage_path = await save_file(job_id, file)
-
-            file_conversion = FileConversion(
-                file_name=file.filename,
-                job=job,
-                output_file_path=storage_path,  # S3 key or local path
-            )
-            db.add(file_conversion)
-            db.commit()
-            db.refresh(file_conversion)
-
-            process_file_conversion.apply_async(
-                args=[file_conversion.id, storage_path], queue="libre_queue"
-            )
-
-            count += 1
-        return job_id, count
+        print(f"Job created with ID: {job_id}")
+        zip_path = await save_file(job_id, file)
+        unzip_and_schedule_file_conversion.apply_async(
+            (zip_path, job_id), queue="file_conversion_queue"
+        )
+        return job_id
     except Exception as e:
         print(f"Error handling file upload: {e}")
         db.rollback()

@@ -5,7 +5,7 @@ services:
       dockerfile: api.DockerFile
     command: >
       bash -c "sleep 10 && alembic upgrade head &&
-               uvicorn app.main:app --host 0.0.0.0 --port 8088"
+               uvicorn app.main:app --host 0.0.0.0 --port 8088 --reload"
 
     ports:
       - "8088:8088"
@@ -36,6 +36,19 @@ services:
       context: .
       dockerfile: worker.DockerFile
     command: celery -A app.celery.celery_app worker -Q zip_queue -c 2 -l info
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+    env_file: .env
+    networks:
+      - backend
+
+  celery_worker_file_upload:
+    build:
+      context: .
+      dockerfile: worker.DockerFile
+    command: celery -A app.celery.celery_app worker -Q file_conversion_queue -c 2 -l info
     volumes:
       - .:/app
     depends_on:

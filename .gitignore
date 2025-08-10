@@ -1,12 +1,14 @@
 .direnv/
 __pycache__/
 *.pyc
+*.rdb
 
 # Ignore file uploads
 file_upload/
 *.docx
 *.pdf
 *.zip
+*.DS_Store
 
 # env
 .envrc.local

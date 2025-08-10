@@ -1,13 +1,17 @@
 import uuid
 from app.database.models import FileConversion, Job, JobStatusEnum
 from app.database.session import SessionLocal
-from app.services.file_conversion_and_zipping import convert_docx_to_pdf, file_zip
+from app.services.file_conversion_and_zipping import (
+    convert_docx_to_pdf,
+    file_zip,
+    unzip_file,
+)
 from app.services.generate_s3_url import generate_presigned_url
 from celery import shared_task
 from pathlib import Path
 import os
 from app.celery import celery_app
-from app.config import USE_S3, S3_BUCKET_NAME, BASE_URL
+from app.config import UPLOAD_DIR, USE_S3, S3_BUCKET_NAME, BASE_URL
 import boto3
 import tempfile
 
@@ -94,6 +98,7 @@ def zip_converted_files(job_id: uuid.UUID):
             fc.output_file_path
             for fc in job.file_conversions
             if fc.status == JobStatusEnum.completed
+            and not os.path.basename(fc.output_file_path).startswith(".~")
         ]
         if not converted_files:
             return
@@ -121,7 +126,8 @@ def zip_converted_files(job_id: uuid.UUID):
                 job.download_url = f"{BASE_URL}/{zip_s3_key}"
         else:
             # Local mode
-            zip_name = f"{Path(converted_files[0]).parent}/{job_id}.zip"
+            print(f"Zipping files: {converted_files}")
+            zip_name = os.path.join(f"{UPLOAD_DIR}/{job_id}/", f"{job_id}.zip")
             zip_path = file_zip(converted_files, zip_name)
 
             url = f"{BASE_URL}/api/v1/jobs/{job_id}/download"
@@ -135,3 +141,33 @@ def zip_converted_files(job_id: uuid.UUID):
         print(f"Error in zip_converted_files: {e}")
     finally:
         session.close()
+
+
+@shared_task
+def unzip_and_schedule_file_conversion(zip_path: str, job_id: uuid.UUID):
+    """
+    Celery task to unzip the uploaded file and schedule file conversions.
+    """
+    files = unzip_file(zip_path)
+    print(f"Unzipped files: ", os.path.dirname(zip_path) + "/" + files[0])
+    db = SessionLocal()
+    job = db.query(Job).filter(Job.id == job_id).first()
+    for file in files:
+        # unzip
+        print(f"Added for conversion: {file}")
+        file_conversion = FileConversion(
+            file_name=file,
+            job=job,
+            output_file_path=os.path.dirname(zip_path)
+            + "/"
+            + file,  # S3 key or local path
+        )
+        db.add(file_conversion)
+        db.commit()
+        db.refresh(file_conversion)
+
+        process_file_conversion.apply_async(
+            args=[file_conversion.id, os.path.dirname(zip_path) + "/" + file],
+            queue="libre_queue",
+        )
+    db.close()
